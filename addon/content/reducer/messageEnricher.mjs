@@ -58,10 +58,6 @@ const kSnippetLength = 700;
  */
 export class MessageEnricher {
   constructor() {
-    this.pluralForm = browser.i18n.getMessage("pluralForm");
-    this.numAttachmentsString = browser.i18n.getMessage(
-      "attachments.numAttachments"
-    );
     this.sizeUnknownString = browser.i18n.getMessage("attachments.sizeUnknown");
   }
 
@@ -646,11 +642,7 @@ export class MessageEnricher {
       }))
     );
     msg.attachmentsPlural = l
-      ? await browser.conversations.makePlural(
-          this.pluralForm,
-          this.numAttachmentsString,
-          l
-        )
+      ? messageUtils.getPlural("attachments.numAttachments", l)
       : "";
   }
 
