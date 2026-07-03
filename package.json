@@ -1,5 +1,5 @@
 {
-  "version": "4.3.8",
+  "version": "4.4.2",
   "description": "Thunderbird Conversations",
   "note(description)": "This file is for build purposes only",
   "repository": {
@@ -47,7 +47,7 @@
     "typescript": "5.9.3",
     "web-ext": "9.2.0",
     "webpack": "5.103.0",
-    "webpack-cli": "6.0.1"
+    "webpack-cli": "^6.0.1"
   },
   "overrides": {
     "compression": "1.8.1",
