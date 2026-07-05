@@ -19,6 +19,7 @@ export const kPrefDefaults = {
   unwanted_recipients: "{}",
   hide_sigs: true,
   disableBetweenColumn: true,
+  qnote_folder: "",
   migratedLegacy: kCurrentLegacyMigration,
 };
 
