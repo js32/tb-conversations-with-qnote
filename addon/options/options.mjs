@@ -364,7 +364,7 @@ export class TextOption extends OptionBase {
       await this.savePref(prefName, value);
 
       // Special handling for qnote_folder: also save to Services.prefs
-      if (prefName === "qnote_folder" && value) {
+      if (prefName === "qnote_folder") {
         await browser.conversations.setCorePref(
           "extensions.thunderbirdconversations.qnote_folder",
           value

@@ -80,7 +80,9 @@ export class MessageEnricher {
 
     const folderNameCache = new Map(); // folder.id -> Promise<string>
     // Start tab info fetch once for all messages (same tabId throughout)
-    const tabInfoPromise = browser.mailTabs.get(summary.tabId).catch(() => null);
+    const tabInfoPromise = Promise.resolve(
+      browser.mailTabs.get(summary.tabId)
+    ).catch(() => null);
 
     let msgs = await Promise.all(
       msgData.map(async (message) => {
@@ -103,14 +105,15 @@ export class MessageEnricher {
                   msg,
                   summary.prefs.extraAttachments
                 ),
-            browser.conversations
-              .getQNoteForMessage(message.id)
+            (async () => browser.conversations.getQNoteForMessage(message.id))()
               .then((t) => {
                 if (t) {
                   msg.qnote = t;
                 }
               })
-              .catch((e) => console.error("QNote: Error in messageEnricher:", e)),
+              .catch((e) =>
+                console.error("QNote: Error in messageEnricher:", e)
+              ),
             this._setDates(msg, summary),
           ]);
 
@@ -344,8 +347,6 @@ export class MessageEnricher {
   /**
    * Obtains the message header and adds the details of the message to it.
    *
-   * @param {number} tabId
-   *   The id of the current tab.
    * @param {object} message
    *   The message to get the additional details for.
    * @param {Array} userTags
@@ -357,7 +358,13 @@ export class MessageEnricher {
    * @param {Promise} tabInfoPromise
    *   A shared promise resolving to the current mail tab (or null).
    */
-  async _addDetailsFromHeader(message, userTags, selectedMessages, folderNameCache, tabInfoPromise) {
+  async _addDetailsFromHeader(
+    message,
+    userTags,
+    selectedMessages,
+    folderNameCache,
+    tabInfoPromise
+  ) {
     // TODO: Maybe only clone msg & start using more fields directly.
     /** @type {FullMessageDetails} */
     let msg = {
@@ -539,7 +546,10 @@ export class MessageEnricher {
         ? browser.messengerUtilities.convertToPlainText(info.body)
         : Promise.resolve(info.body ?? ""),
       this._addDetailsFromAttachments(
-        { attachments: lateAttachments, initialPosition: message.initialPosition },
+        {
+          attachments: lateAttachments,
+          initialPosition: message.initialPosition,
+        },
         msg
       ),
     ]);

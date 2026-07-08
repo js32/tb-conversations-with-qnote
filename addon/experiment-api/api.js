@@ -262,6 +262,14 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
               return null;
             }
 
+            if (/[/\\]|\.\./.test(headerMessageId)) {
+              console.warn(
+                "QNote API: Rejecting headerMessageId with path separators or '..':",
+                headerMessageId
+              );
+              return null;
+            }
+
             // Try to read QNote from filesystem
             // QNote stores notes as JSON files: <headerMessageId>.qnote
             try {
@@ -274,7 +282,7 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
                   "extensions.thunderbirdconversations.qnote_folder"
                 );
                 console.log(`QNote: Found path in preferences: ${qnotePath}`);
-              } catch (e) {
+              } catch {
                 // Preference not set
               }
 
@@ -372,9 +380,8 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
               if (data) {
                 console.log(`QNote: Returning note data for message ${id}`);
                 return data;
-              } else {
-                console.log(`QNote: No note data found for message ${id}`);
               }
+              console.log(`QNote: No note data found for message ${id}`);
             } catch (e) {
               console.error("QNote: Error reading from filesystem:", e);
             }

@@ -40,7 +40,7 @@ export class Prefs {
       let updatePrefs = false;
       for (const prefName of Object.getOwnPropertyNames(kPrefDefaults)) {
         // Ensure all preference values are defined.
-        if (results.preferences[prefName] === "undefined") {
+        if (results.preferences[prefName] === undefined) {
           updatePrefs = true;
           results.preferences[prefName] = kPrefDefaults[prefName];
         }

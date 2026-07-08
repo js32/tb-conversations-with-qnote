@@ -52,7 +52,7 @@ The built addon will be in `dist/` and `conversations.xpi`.
 ## Credits
 
 - Original Thunderbird Conversations by Jonathan Protzenko and contributors
-- QNote integration added by [Your Name]
+- QNote integration added by js32
 - QNote addon by mlazdans
 
 ## License

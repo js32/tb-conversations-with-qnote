@@ -234,15 +234,15 @@ if (!browser.conversations) {
     async makeFriendlyDateAgo() {
       return "yesterday";
     },
-    async makePlural(form, string, count) {
-      return `${string} ${count}`;
-    },
     async quoteMsgHdr() {
       return "MsgBody";
     },
     async previewAttachment() {},
     async getLateAttachments() {
       return [];
+    },
+    async getQNoteForMessage() {
+      return null;
     },
     async getReplyOnTop() {
       return 1;

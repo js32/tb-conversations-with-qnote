@@ -17,15 +17,23 @@ This document describes how to enable QNote integration in Thunderbird Conversat
 
 ### Step 2: Configure Thunderbird Conversations
 
+The recommended way is via the add-on's own options page:
+
+1. Open Thunderbird Conversations' options (Add-ons Manager → Thunderbird
+   Conversations → Preferences)
+2. Enter the path in the "QNote Folder Path" field
+
+   Example: `/Users/play/syncthing/7L-GF/_qnote`
+
+Alternatively, you can set the underlying preference directly via the Config
+Editor:
+
 1. Open Thunderbird
 2. Go to Settings → General → Config Editor (at the bottom)
 3. Click "I accept the risk!"
 4. Search for: `extensions.thunderbirdconversations.qnote_folder`
 5. If it doesn't exist, click "String" and "+" to create it
 6. Set the value to your QNote storage folder path
-
-   Example: `/Users/play/syncthing/7L-GF/_qnote`
-
 7. Restart Thunderbird
 
 ## How it works
@@ -71,17 +79,17 @@ Example: `10aa54c6-7007-4c5f-9cb4-d2e46eebfb44%40fk.siebenlinden.org.qnote`
 
 The integration works by:
 
-1. **API Method** (`addon/experiment-api/api.js:247`): `getQNoteForMessage(messageId)`
+1. **API Method** (`addon/experiment-api/api.js:248`): `getQNoteForMessage(messageId)`
    - Reads the folder path from preferences
    - Constructs the filename using URL-encoded message ID
    - Reads and parses the JSON file
    - Returns the note text
 
-2. **Message Enrichment** (`addon/content/reducer/messageEnricher.mjs:534`)
+2. **Message Enrichment** (`addon/content/reducer/messageEnricher.mjs:109`)
    - Calls `getQNoteForMessage()` during message enrichment
    - Stores the note text in `msg.qnote`
 
-3. **UI Display** (`addon/content/components/message/message.mjs:417`)
+3. **UI Display** (`addon/content/components/message/message.mjs:418`)
    - Renders notes in a yellow box if `message.qnote` is present
    - Styled with light yellow background (#fffacd)
    - Positioned between message tags and message body
@@ -95,9 +103,11 @@ The system tries to read the folder path in this order:
 
 ## Future Enhancements
 
-Potential improvements:
+The folder path can now be configured directly from the Thunderbird
+Conversations options page (see "Setup" above), so this is no longer needed.
 
-- Add UI in Thunderbird Conversations options to set the folder path
+Remaining potential improvements:
+
 - Auto-detect QNote's folder path from QNote's settings
 - Support for editing notes directly from the conversation view
 - Icon/indicator showing which messages have notes
