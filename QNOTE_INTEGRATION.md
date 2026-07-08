@@ -69,9 +69,11 @@ Example: `10aa54c6-7007-4c5f-9cb4-d2e46eebfb44%40fk.siebenlinden.org.qnote`
   - The folder path is correct
   - QNote is using folder storage (not internal storage)
   - The .qnote files exist in the configured folder
-  - You've restarted Thunderbird after setting the preference
+  - You've re-opened the conversation — note lookups are cached for up to
+    30 seconds
 
-- **Check the Browser Console** (Ctrl+Shift+J) for debug messages starting with "QNote integration:"
+- **Check the Browser Console** (Ctrl+Shift+J) for messages starting with
+  "QNote" (enable the "Debug" log level to see the informational ones)
 
 ## Technical Details
 
@@ -79,11 +81,14 @@ Example: `10aa54c6-7007-4c5f-9cb4-d2e46eebfb44%40fk.siebenlinden.org.qnote`
 
 The integration works by:
 
-1. **API Method** (`addon/experiment-api/api.js:248`): `getQNoteForMessage(messageId)`
+1. **API Method** (`addon/experiment-api/api.js:320`): `getQNoteForMessage(messageId)`
    - Reads the folder path from preferences
    - Constructs the filename using URL-encoded message ID
-   - Reads and parses the JSON file
+   - Reads and parses the JSON file asynchronously via `IOUtils`
    - Returns the note text
+   - Results are cached per message ID for 30 seconds, so re-renders of the
+     same conversation don't re-read the files; the cache is cleared when the
+     folder path is changed via the options page
 
 2. **Message Enrichment** (`addon/content/reducer/messageEnricher.mjs:109`)
    - Calls `getQNoteForMessage()` during message enrichment
@@ -98,8 +103,8 @@ The integration works by:
 
 The system tries to read the folder path in this order:
 
-1. `extensions.qnote.folder` (QNote's own preference, if exposed)
-2. `extensions.thunderbirdconversations.qnote_folder` (our custom preference)
+1. `extensions.thunderbirdconversations.qnote_folder` (our custom preference)
+2. `extensions.qnote.folder` (QNote's own preference, if exposed)
 
 ## Future Enhancements
 

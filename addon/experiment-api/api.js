@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-/* global ExtensionCommon, XPCOMUtils, Services */
+/* global ExtensionCommon, XPCOMUtils, Services, IOUtils, PathUtils */
 
 var lazy = {};
 
@@ -47,6 +47,77 @@ function msgUriToMsgHdr(aUri) {
     return messageService.messageURIToMsgHdr(aUri);
   } catch (e) {
     console.error("Unable to get ", aUri, " — returning null instead", e);
+    return null;
+  }
+}
+
+// How long a fetched QNote may be served from cache before re-reading it
+// from disk. Notes can be edited externally (QNote UI, file sync), so keep
+// this short — it only needs to absorb re-renders of the same conversation.
+const kQNoteCacheTTLMs = 30 * 1000;
+
+/** @type {Map<string, {promise: Promise<string|null>, time: number}>} */
+const qnoteCache = new Map();
+
+/**
+ * Gets the configured QNote storage folder path, preferring our own
+ * preference and falling back to QNote's.
+ *
+ * @returns {string|null}
+ */
+function getQNoteFolderPath() {
+  try {
+    const path = Services.prefs.getStringPref(
+      "extensions.thunderbirdconversations.qnote_folder"
+    );
+    if (path) {
+      return path;
+    }
+  } catch {
+    // Preference not set.
+  }
+
+  try {
+    const prefBranch = Services.prefs.getBranch("extensions.qnote.");
+    if (prefBranch.prefHasUserValue("folder")) {
+      return prefBranch.getStringPref("folder");
+    }
+  } catch {
+    // Preference not set.
+  }
+  return null;
+}
+
+/**
+ * Reads the QNote file for a message from the configured folder.
+ *
+ * @param {string} headerMessageId
+ *   The Message-ID header value; must already be validated against path
+ *   separators and "..".
+ * @returns {Promise<string|null>}
+ *   The note text, or null if there is none.
+ */
+async function readQNote(headerMessageId) {
+  const qnotePath = getQNoteFolderPath();
+  if (!qnotePath) {
+    console.debug("QNote: No folder path configured.");
+    return null;
+  }
+
+  // QNote stores notes as JSON files named <url-encoded-message-id>.qnote.
+  // encodeURIComponent escapes path separators, keeping the lookup inside
+  // the configured folder.
+  const filename = encodeURIComponent(headerMessageId) + ".qnote";
+  const fullPath = PathUtils.join(qnotePath, filename);
+
+  try {
+    const noteData = await IOUtils.readJSON(fullPath);
+    return noteData.text || null;
+  } catch (e) {
+    // Most messages simply have no note.
+    if (e?.name != "NotFoundError") {
+      console.error(`QNote: Failed to read ${fullPath}:`, e);
+    }
     return null;
   }
 }
@@ -224,7 +295,8 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
                 break;
               case "extensions.thunderbirdconversations.qnote_folder":
                 Services.prefs.setStringPref(name, value);
-                console.log(`Set qnote_folder pref to: ${value}`);
+                // Cached results were looked up in the old folder.
+                qnoteCache.clear();
                 break;
             }
           } catch (ex) {
@@ -246,19 +318,14 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
           return msgHdr.folder.getUriForMsg(msgHdr);
         },
         async getQNoteForMessage(id) {
-          console.log("QNote API: getQNoteForMessage called with id:", id);
           try {
             const msgHdr = context.extension.messageManager.get(id);
             if (!msgHdr) {
-              console.log("QNote API: No msgHdr found for id:", id);
               return null;
             }
 
-            // Check if QNote addon is installed and provides an API
             const headerMessageId = msgHdr.messageId;
-            console.log("QNote API: headerMessageId:", headerMessageId);
             if (!headerMessageId) {
-              console.log("QNote API: No headerMessageId");
               return null;
             }
 
@@ -270,123 +337,22 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
               return null;
             }
 
-            // Try to read QNote from filesystem
-            // QNote stores notes as JSON files: <headerMessageId>.qnote
-            try {
-              // Try to get the qnote storage folder path from preferences
-              let qnotePath = null;
-
-              // Try to read from Thunderbird Conversations preference
-              try {
-                qnotePath = Services.prefs.getStringPref(
-                  "extensions.thunderbirdconversations.qnote_folder"
-                );
-                console.log(`QNote: Found path in preferences: ${qnotePath}`);
-              } catch {
-                // Preference not set
-              }
-
-              // If no preference found, try to read from qnote's own preferences
-              if (!qnotePath) {
-                try {
-                  const prefBranch =
-                    Services.prefs.getBranch("extensions.qnote.");
-                  if (prefBranch.prefHasUserValue("folder")) {
-                    qnotePath = prefBranch.getStringPref("folder");
-                    console.log(
-                      `QNote: Found path in qnote preferences: ${qnotePath}`
-                    );
+            // Cache the in-flight promise so a burst of renders for the same
+            // conversation only reads each note file once per TTL window.
+            const now = Date.now();
+            let entry = qnoteCache.get(headerMessageId);
+            if (!entry || now - entry.time > kQNoteCacheTTLMs) {
+              if (qnoteCache.size > 500) {
+                for (const [key, value] of qnoteCache) {
+                  if (now - value.time > kQNoteCacheTTLMs) {
+                    qnoteCache.delete(key);
                   }
-                } catch (e) {
-                  console.debug("QNote: No qnote preferences found", e);
                 }
               }
-
-              if (!qnotePath) {
-                console.log(
-                  "QNote: No folder path configured. Please set qnote_folder in preferences."
-                );
-                return null;
-              }
-
-              console.log(
-                `QNote: Looking for note for message ID: ${headerMessageId}`
-              );
-
-              // Construct the file path
-              const file = Cc["@mozilla.org/file/local;1"].createInstance(
-                Ci.nsIFile
-              );
-              file.initWithPath(qnotePath);
-
-              // Append the filename: <headerMessageId>.qnote
-              // URL encode the message ID to match qnote's file naming
-              const filename = encodeURIComponent(headerMessageId) + ".qnote";
-              file.append(filename);
-
-              const fullPath = file.path;
-              console.log(`QNote: Checking for file: ${fullPath}`);
-
-              if (!file.exists()) {
-                console.log(`QNote: File does not exist: ${fullPath}`);
-                return null;
-              }
-
-              if (!file.isFile()) {
-                console.log(
-                  `QNote: Path exists but is not a file: ${fullPath}`
-                );
-                return null;
-              }
-
-              console.log(`QNote: File exists, reading: ${fullPath}`);
-
-              // Read the file
-              const data = await new Promise((resolve, reject) => {
-                lazy.NetUtil.asyncFetch(
-                  {
-                    uri: Services.io.newFileURI(file),
-                    loadUsingSystemPrincipal: true,
-                  },
-                  (inputStream, status) => {
-                    if (!Components.isSuccessCode(status)) {
-                      console.error(
-                        `QNote: Failed to read file, status: ${status}`
-                      );
-                      resolve(null);
-                      return;
-                    }
-
-                    try {
-                      const text = lazy.NetUtil.readInputStreamToString(
-                        inputStream,
-                        inputStream.available()
-                      );
-
-                      console.log(`QNote: Read ${text.length} bytes from file`);
-                      const noteData = JSON.parse(text);
-                      console.log(
-                        `QNote: Parsed note text: "${noteData.text}"`
-                      );
-                      resolve(noteData.text || null);
-                    } catch (e) {
-                      console.error("QNote: Failed to parse JSON:", e);
-                      resolve(null);
-                    }
-                  }
-                );
-              });
-
-              if (data) {
-                console.log(`QNote: Returning note data for message ${id}`);
-                return data;
-              }
-              console.log(`QNote: No note data found for message ${id}`);
-            } catch (e) {
-              console.error("QNote: Error reading from filesystem:", e);
+              entry = { promise: readQNote(headerMessageId), time: now };
+              qnoteCache.set(headerMessageId, entry);
             }
-
-            return null;
+            return await entry.promise;
           } catch (e) {
             console.error("Error getting QNote for message:", e);
             return null;
