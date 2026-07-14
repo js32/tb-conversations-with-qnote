@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create (e.g. v4.4.3)"
+        required: true
 
 permissions:
   contents: write
@@ -21,7 +26,21 @@ jobs:
         run: npm ci --force
       - name: Build extension
         run: npm run prod
-      - name: Create GitHub release
+      # For dispatched releases the body comes from .github/RELEASE_NOTES.md —
+      # update that file before dispatching. Tag-push releases use the
+      # annotated tag's message instead.
+      - name: Create GitHub release (from dispatched tag input)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "${TAG}" conversations.xpi \
+            --title "${TAG}" \
+            --target "${GITHUB_SHA}" \
+            --notes-file .github/RELEASE_NOTES.md
+      - name: Create GitHub release (from pushed tag)
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
