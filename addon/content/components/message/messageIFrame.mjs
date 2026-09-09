@@ -586,6 +586,13 @@ export class MessageIFrame extends React.Component {
       "span.moz-txt-formfeed {",
       "  height: auto;",
       "}",
+      // Thunderbird's own message pane shrinks oversized images to fit the
+      // available width. Our iframe doesn't get those styles, so images in
+      // HTML mails would otherwise overflow horizontally.
+      "img:not([class*='moz-']) {",
+      "  max-width: 100%;",
+      "  height: auto;",
+      "}",
     ];
 
     // Additional CSS for dark mode
