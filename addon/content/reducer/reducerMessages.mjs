@@ -259,12 +259,60 @@ export const messageActions = {
   },
   clickIframe({ event }) {
     return () => {
-      // Hand this off to Thunderbird's content clicking algorithm as that's simplest.
       // @ts-expect-error
-      if (!window.browsingContext.topChromeWindow.contentAreaClick(event)) {
-        event.preventDefault();
-        event.stopPropagation();
+      let topWin = window.browsingContext.topChromeWindow;
+      // Hand this off to Thunderbird's content clicking algorithm where it is
+      // still available, as that's simplest.
+      if (topWin.contentAreaClick) {
+        if (!topWin.contentAreaClick(event)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
       }
+
+      // Newer versions of Thunderbird have removed `contentAreaClick` in
+      // favour of actors, which do not apply to our message iframes. Hence we
+      // need to handle opening links in the external browser ourselves.
+      if (event.defaultPrevented || event.button) {
+        return;
+      }
+      let link = event.target.closest?.("a[href], area[href]");
+      if (!link) {
+        return;
+      }
+      let url = link.href;
+      // Leave anything else (e.g. mailto: or anchors within the message) to
+      // Thunderbird.
+      if (!/^https?:/i.test(url)) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Same as Thunderbird's own message pane, warn before following links
+      // which look like phishing attempts.
+      if (globalThis.ChromeUtils) {
+        // @ts-ignore
+        let { PhishingDetector } = globalThis.ChromeUtils.importESModule(
+          "resource:///modules/PhishingDetector.sys.mjs"
+        );
+        let linkText = link.textContent;
+        let result = PhishingDetector.warnOnSuspiciousLinkClick(
+          topWin,
+          url,
+          linkText
+        );
+        if (result === 1) {
+          // Blocked by the user.
+          return;
+        }
+        if (result === 0) {
+          // The user chose to visit the site named in the link text instead.
+          url = linkText;
+        }
+      }
+      browser.windows.openDefaultBrowser(url);
     };
   },
   showRemoteContent({ id }) {
