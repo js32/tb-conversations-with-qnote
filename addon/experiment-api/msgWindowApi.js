@@ -109,8 +109,8 @@ var convMsgWindow = class extends ExtensionCommon.ExtensionAPI {
             let contentWin = tabObject.nativeTab.chromeBrowser.contentWindow;
             let threadPane;
 
-            waitForWindow(tabObject.nativeTab.chromeBrowser.contentWindow).then(
-              () => {
+            waitForWindow(tabObject.nativeTab.chromeBrowser)
+              .then(() => {
                 threadPane = contentWin.threadPane;
 
                 threadPane._convOldOnItemActivate = threadPane._onItemActivate;
@@ -130,10 +130,13 @@ var convMsgWindow = class extends ExtensionCommon.ExtensionAPI {
                     contentWin.threadPane._convOldOnItemActivate(event);
                   })();
                 };
-              }
-            );
+              })
+              .catch(console.error);
 
             return function () {
+              if (!threadPane) {
+                return;
+              }
               threadPane._onItemActivate = threadPane._convOldOnItemActivate;
               delete threadPane._convOldOnItemActivate;
             };
@@ -149,16 +152,19 @@ var convMsgWindow = class extends ExtensionCommon.ExtensionAPI {
             // TODO: How to wait for tab loaded?
             // Probably need to wait for the nativeTab to finish loading?
             // Or maybe a browser underneath it?
-            waitForWindow(tabObject.nativeTab.chromeBrowser.contentWindow).then(
-              () => {
+            waitForWindow(tabObject.nativeTab.chromeBrowser)
+              .then(() => {
                 contentWin.document
                   .getElementById("multiMessageBrowser")
                   ?.setAttribute("context", "browserContext");
                 summarizeThreadHandler(contentWin, tabId, context);
-              }
-            );
+              })
+              .catch(console.error);
             return function () {
               let threadPane = contentWin.threadPane;
+              if (!threadPane?._oldOnSelect) {
+                return;
+              }
               threadPane._onSelect = threadPane._oldOnSelect;
               contentWin.document
                 .getElementById("multiMessageBrowser")
@@ -196,20 +202,31 @@ function getWindowFromId(windowManager, context, id) {
 
 // Only needed until https://bugzilla.mozilla.org/show_bug.cgi?id=1817872 is
 // resolved.
-function waitForWindow(win) {
-  return new Promise((resolve) => {
-    if (win.document.readyState == "complete") {
-      resolve();
-    } else {
-      win.addEventListener(
-        "load",
-        () => {
+//
+// On startup the tab's browser may still be displaying the initial
+// about:blank page, which already reports a readyState of "complete". Hence
+// we must also check that about:3pane is what has been loaded, the same as
+// Thunderbird's own `waitForMailTabReady` does.
+async function waitForWindow(chromeBrowser) {
+  function isReady() {
+    return (
+      chromeBrowser.contentDocument?.readyState == "complete" &&
+      chromeBrowser.currentURI?.spec == "about:3pane"
+    );
+  }
+
+  if (!isReady()) {
+    await new Promise((resolve) => {
+      function listener() {
+        if (isReady()) {
+          chromeBrowser.removeEventListener("load", listener, true);
           resolve();
-        },
-        { once: true }
-      );
-    }
-  });
+        }
+      }
+      chromeBrowser.addEventListener("load", listener, true);
+    });
+  }
+  await chromeBrowser.contentWindow.hasDOMContentLoaded?.promise;
 }
 
 function isSelectionExpanded(contentWin) {
