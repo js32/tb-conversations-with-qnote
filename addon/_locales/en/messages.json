@@ -334,6 +334,16 @@
     "description": "Tooltip for hiding message header details"
   },
 
+  "message.enableLightMode.tooltip": {
+    "message": "show in light mode",
+    "description": "Tooltip for enabling light mode for a dark message"
+  },
+
+  "message.disableLightMode.tooltip": {
+    "message": "restore dark mode",
+    "description": "Tooltip for disabling light mode override"
+  },
+
   "message.moreMenu.tooltip": {
     "message": "more",
     "description": "Tooltip for the more menu"
@@ -372,6 +382,10 @@
   "action.print": {
     "message": "print message",
     "description": "Print button name in the message more menu"
+  },
+  "action.junk": {
+    "message": "mark as junk",
+    "description": "Junk button name in the message header"
   },
 
   "action.viewClassic": {

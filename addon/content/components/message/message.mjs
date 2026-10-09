@@ -344,6 +344,7 @@ export class Message extends React.PureComponent {
         fullDate: this.props.message.fullDate,
         id: this.props.message.id,
         attachments: this.props.message.attachments,
+        attachmentsPlural: this.props.message.attachmentsPlural,
         multipleRecipients: this.props.message.multipleRecipients,
         recipientsIncludeLists: this.props.message.recipientsIncludeLists,
         inView: this.props.message.inView,

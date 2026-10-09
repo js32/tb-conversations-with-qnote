@@ -187,6 +187,19 @@ export class MessageIFrame extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
+    if (
+      prevProps.overrideDarkMode !== this.props.overrideDarkMode ||
+      prevProps.darkReaderEnabled !== this.props.darkReaderEnabled
+    ) {
+      const iframeDoc = this.iframe?.contentDocument;
+      if (iframeDoc?.documentElement) {
+        if (this.props.darkReaderEnabled && !this.props.overrideDarkMode) {
+          iframeDoc.documentElement.classList.add("darkReaderEnabled");
+        } else {
+          iframeDoc.documentElement.classList.remove("darkReaderEnabled");
+        }
+      }
+    }
     let startLoad = false;
     // dueToExpansion is used so that we can indicate if this load is happening
     // as a result of an expansion or not. If it is a user expansion, we don't
@@ -622,7 +635,7 @@ export class MessageIFrame extends React.Component {
     }
 
     const iframeDoc = this.iframe.contentDocument;
-    if (this.props.darkReaderEnabled) {
+    if (this.props.darkReaderEnabled && !this.props.overrideDarkMode) {
       iframeDoc.documentElement?.classList.add("darkReaderEnabled");
     } else {
       iframeDoc.documentElement?.classList.remove("darkReaderEnabled");
@@ -689,6 +702,7 @@ MessageIFrame.propTypes = {
   browserBackgroundColor: PropTypes.string.isRequired,
   browserForegroundColor: PropTypes.string.isRequired,
   darkReaderEnabled: PropTypes.bool.isRequired,
+  overrideDarkMode: PropTypes.bool,
   defaultFontSize: PropTypes.number.isRequired,
   dispatch: PropTypes.func.isRequired,
   expanded: PropTypes.bool.isRequired,

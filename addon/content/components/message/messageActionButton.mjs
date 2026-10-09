@@ -37,6 +37,10 @@ const ActionsToInfoMap = {
     title: "action.delete",
     icon: "delete",
   },
+  junk: {
+    title: "action.junk",
+    icon: "report",
+  },
   classic: {
     title: "action.viewClassic",
     icon: "open_in_new",

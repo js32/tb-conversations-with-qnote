@@ -115,6 +115,11 @@ export const messageActions = {
       browser.messages.delete([id]).catch(console.error);
     };
   },
+  markJunk({ id }) {
+    return async () => {
+      browser.messages.update(id, { junk: true }).catch(console.error);
+    };
+  },
   openClassic({ id }) {
     return async () => {
       browser.messageDisplay.open({ messageId: id });
@@ -650,6 +655,12 @@ export const messagesSlice = RTK.createSlice({
       return modifyOnlyMsg(state, payload.id, (msg) => {
         return { ...msg, scrollTo: false };
       });
+    },
+    toggleOverrideDarkMode(state, { payload }) {
+      return modifyOnlyMsg(state, payload.id, (msg) => ({
+        ...msg,
+        overrideDarkMode: !msg.overrideDarkMode,
+      }));
     },
     msgShowNotification(state, { payload }) {
       return modifyOnlyMsg(state, payload.msgData.id, (msg) => {

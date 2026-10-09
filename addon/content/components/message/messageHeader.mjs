@@ -256,7 +256,9 @@ function Avatar({ url, initials, style }) {
  * @param {number} props.id
  * @param {boolean} props.inView
  * @param {object[]} props.attachments
+ * @param {string} props.attachmentsPlural
  * @param {boolean} props.multipleRecipients
+ * @param {boolean} [props.overrideDarkMode]
  * @param {boolean} props.recipientsIncludeLists
  * @param {boolean} props.isDraft
  * @param {string} [props.shortFolderName]
@@ -277,7 +279,9 @@ export function MessageHeader({
   detailsShowing,
   fullDate,
   attachments,
+  attachmentsPlural,
   multipleRecipients,
+  overrideDarkMode,
   recipientsIncludeLists,
   isDraft,
   inView,
@@ -425,7 +429,9 @@ export function MessageHeader({
       fullDate,
       id,
       attachments,
+      attachmentsPlural,
       multipleRecipients,
+      overrideDarkMode,
       recipientsIncludeLists,
       isDraft,
     })

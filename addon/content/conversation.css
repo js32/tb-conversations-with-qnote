@@ -208,6 +208,16 @@ linkified-subject {
   cursor: pointer;
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  flex-basis: 100%;
+  justify-content: flex-start;
+  gap: 0.8em;
+  order: 3;
 }
 
 .mainActionButton > .icon-link,
@@ -215,9 +225,16 @@ linkified-subject {
 .attachmentsDropDown > .icon-link,
 .details-hidden > .icon-link,
 .invert-colors > .icon-link,
+.override-dark-mode > .icon-link,
+.quickActionButtons > .icon-link,
 .optionsButton {
   background: none;
   border: 0;
+}
+
+.quickActionButtons {
+  display: flex;
+  gap: 0.6em;
 }
 
 .author {
@@ -267,7 +284,7 @@ html[dir="rtl"] .tooltip {
 }
 
 .options > .date {
-  padding-inline-end: 0.5ch;
+  padding-inline-end: 1.2ch;
 }
 
 .dropDown,

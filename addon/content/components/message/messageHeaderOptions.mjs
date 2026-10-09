@@ -144,7 +144,9 @@ export function OptionsMoreMenu({
  * @param {string} props.fullDate
  * @param {number} props.id
  * @param {object[]} props.attachments
+ * @param {string} props.attachmentsPlural
  * @param {boolean} props.multipleRecipients
+ * @param {boolean} [props.overrideDarkMode]
  * @param {boolean} props.recipientsIncludeLists
  * @param {boolean} props.isDraft
  */
@@ -156,7 +158,9 @@ export function MessageHeaderOptions({
   fullDate,
   id,
   attachments,
+  attachmentsPlural,
   multipleRecipients,
+  overrideDarkMode,
   recipientsIncludeLists,
   isDraft,
 }) {
@@ -192,6 +196,9 @@ export function MessageHeaderOptions({
       case "delete":
         action = messageActions.delete({ id });
         break;
+      case "junk":
+        action = messageActions.markJunk({ id });
+        break;
       case "classic":
         action = messageActions.openClassic(payload);
         break;
@@ -216,6 +223,12 @@ export function MessageHeaderOptions({
         detailsShowing: !detailsShowing,
       })
     );
+  }
+
+  function toggleLightMode(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    dispatch(messageActions.toggleOverrideDarkMode({ id }));
   }
 
   React.useEffect(() => {
@@ -265,7 +278,10 @@ export function MessageHeaderOptions({
     !!attachments.length &&
       React.createElement(
         "span",
-        { className: "attachmentIcon" },
+        {
+          className: "attachmentIcon",
+          title: attachmentsPlural,
+        },
         React.createElement("svg-icon", { hash: "attachment" })
       ),
     React.createElement(
@@ -282,6 +298,38 @@ export function MessageHeaderOptions({
           className: "icon-link",
           type: actionButtonType,
         })
+      ),
+    expanded &&
+      React.createElement(
+        "span",
+        { className: "quickActionButtons" },
+        ["forward", "archive", "junk", "delete"].map((type) =>
+          React.createElement(ActionButton, {
+            key: type,
+            callback: replyAction,
+            className: "icon-link",
+            type,
+          })
+        )
+      ),
+    expanded &&
+      React.createElement(
+        "span",
+        { className: "override-dark-mode" },
+        React.createElement(
+          "button",
+          {
+            className: "icon-link",
+            onClick: toggleLightMode,
+            title: overrideDarkMode
+              ? browser.i18n.getMessage("message.disableLightMode.tooltip")
+              : browser.i18n.getMessage("message.enableLightMode.tooltip"),
+          },
+          React.createElement("svg-icon", {
+            "aria-hidden": true,
+            hash: overrideDarkMode ? "invert_colors_off" : "invert_colors",
+          })
+        )
       ),
     expanded &&
       React.createElement(
