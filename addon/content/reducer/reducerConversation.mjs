@@ -222,7 +222,7 @@ export const conversationActions = {
         await dispatch(controllerActions.maybeSetMarkAsRead());
 
         // Set this off, but don't wait for it.
-        getContactPhotos(enrichedMsgs, dispatch);
+        getContactPhotos(enrichedMsgs, dispatch).catch(console.error);
       });
     };
   },
