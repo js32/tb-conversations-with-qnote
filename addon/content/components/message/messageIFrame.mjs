@@ -601,8 +601,10 @@ export class MessageIFrame extends React.Component {
       "}",
       // Thunderbird's own message pane shrinks oversized images to fit the
       // available width. Our iframe doesn't get those styles, so images in
-      // HTML mails would otherwise overflow horizontally.
-      "img:not([class*='moz-']) {",
+      // HTML mails would otherwise overflow horizontally. `:where()` keeps
+      // the specificity minimal, so that sizes set by the message's own
+      // styles (e.g. `.icon { max-width: 20px }` in signatures) still win.
+      "img:where(:not([class*='moz-'])) {",
       "  max-width: 100%;",
       "  height: auto;",
       "}",
