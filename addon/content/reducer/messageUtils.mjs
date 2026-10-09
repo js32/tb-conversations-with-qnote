@@ -61,4 +61,43 @@ export let messageUtils = new (class {
       [quantity]
     );
   }
+
+  /**
+   * Gets the attachments for a message. If the user wants to see as many
+   * attachments as possible, this also adds anything the WebExtension API
+   * knows about that the MIME emitter didn't report.
+   *
+   * @param {number} id
+   *   The id of the message to get the attachments for.
+   * @param {boolean} [extraAttachments]
+   *   Whether or not the user wants to display extra attachments.
+   * @returns {Promise<object[]>}
+   */
+  async getAttachments(id, extraAttachments) {
+    let [attachments, listed] = await Promise.all([
+      browser.conversations.getLateAttachments(id, !!extraAttachments),
+      extraAttachments
+        ? browser.messages.listAttachments(id).catch((ex) => {
+            console.error("Could not list attachments:", ex);
+            return [];
+          })
+        : [],
+    ]);
+
+    let seenParts = new Set(attachments.map((a) => a.partName));
+    for (let att of listed) {
+      if (seenParts.has(att.partName)) {
+        continue;
+      }
+      seenParts.add(att.partName);
+      attachments.push({
+        size: att.size ?? -1,
+        contentType: att.contentType,
+        name: att.name,
+        partName: att.partName,
+        anchor: "msg" + id + "att" + attachments.length,
+      });
+    }
+    return attachments;
+  }
 })();

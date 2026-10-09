@@ -80,7 +80,7 @@
     "description": "Options - title for attachment settings."
   },
   "options.extra_attachments_desc": {
-    "message": "In einigen seltenen Fällen erkennt Thunderbird Email-Anhänge nicht. Durch diese Option wird der Fehler in Thunderbird umgangen und es wird versucht so viele Anhänge wie möglich anzuzeigen. In Verbindung mit dem \"Show All Body Parts\" Add-on benutzen.",
+    "message": "In einigen seltenen Fällen erkennt Thunderbird Email-Anhänge nicht. Durch diese Option wird der Fehler in Thunderbird umgangen und es wird versucht so viele Anhänge wie möglich anzuzeigen.",
     "description": "Options - description for attachment settings."
   },
   "options.compose_in_tab_title": {

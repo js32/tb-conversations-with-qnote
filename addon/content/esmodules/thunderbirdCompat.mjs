@@ -469,6 +469,9 @@ if (!browser.messages) {
         parts: [{}],
       };
     },
+    async listAttachments(id) {
+      return [];
+    },
     async update(id) {},
   };
 }

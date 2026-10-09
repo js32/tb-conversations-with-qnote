@@ -33,7 +33,7 @@ async function getParamsForCompose(msg, shiftKey) {
 export const messageActions = {
   getLateAttachments({ id }) {
     return async (dispatch, getState) => {
-      const attachments = await browser.conversations.getLateAttachments(
+      const attachments = await messageUtils.getAttachments(
         id,
         getState().summary.prefs.extraAttachments
       );

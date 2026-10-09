@@ -385,9 +385,9 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
           Services.obs.notifyObservers(null, "startupcache-invalidate");
         },
         async getLateAttachments(id, extraAttachments) {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve) => {
             const msgHdr = context.extension.messageManager.get(id);
-            lazy.MsgHdrToMimeMessage(msgHdr, null, (_, mimeMsg) => {
+            const callback = (_, mimeMsg) => {
               if (!mimeMsg) {
                 resolve([]);
                 return;
@@ -419,7 +419,18 @@ var conversations = class extends ExtensionCommon.ExtensionAPI {
                   };
                 })
               );
-            });
+            };
+            try {
+              // Allow the message to be downloaded, otherwise we get nothing
+              // for messages which aren't available offline. Encrypted parts
+              // are stripped by default, which would hide their attachments.
+              lazy.MsgHdrToMimeMessage(msgHdr, null, callback, true, {
+                examineEncryptedParts: true,
+              });
+            } catch (ex) {
+              console.error("Could not get attachments for message:", ex);
+              resolve([]);
+            }
           });
         },
         async markSelectedAsJunk(tabId, isJunk) {

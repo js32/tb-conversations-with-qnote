@@ -99,7 +99,11 @@ export class MessageEnricher {
 
           await Promise.all([
             message.getFullRequired
-              ? this._getFullDetails(message, msg)
+              ? this._getFullDetails(
+                  message,
+                  msg,
+                  summary.prefs.extraAttachments
+                )
               : this._addDetailsFromAttachments(
                   message,
                   msg,
@@ -469,16 +473,14 @@ export class MessageEnricher {
    *   The message to get the full details for.
    * @param {object} msg
    *   The new message to put the details into.
+   * @param {boolean} [extraAttachments]
+   *   Whether or not the user wants to display extra attachments.
    */
-  async _getFullDetails(message, msg) {
+  async _getFullDetails(message, msg, extraAttachments) {
     // Fetch full message content and late attachments in parallel
     const [fullMsg, lateAttachments] = await Promise.all([
       browser.messages.getFull(message.id),
-      // TODO: Attachment display currently relies on having the URI for the
-      // preview of the attachment. Since listAttachments doesn't give us that,
-      // then we use getLateAttachments for now. If we can delay load the image
-      // and insert it later, that'd probably be good enough.
-      browser.conversations.getLateAttachments(message.id, false),
+      messageUtils.getAttachments(message.id, extraAttachments),
     ]);
 
     if (
